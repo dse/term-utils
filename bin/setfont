@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+shopt -s lastpipe
+if (( $# < 1 )) ; then
+    >&2 echo "setfont <font>"
+    exit 1
+fi
+OSC='\e]'
+ST='\e\\'
+echo -n -e "${OSC}50;${1}${ST}"

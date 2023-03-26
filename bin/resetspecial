@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+shopt -s lastpipe
+OSC='\e]'
+ST='\e\\'
+if (( $# < 1 )) ; then
+    >&2 echo "resetspecial <num>"
+    >&2 echo "0 = bold; 1 = u/l; 2 = blink; 3 = reverse; 4 = italic"
+    exit 1
+fi
+color="$1"
+spec="$2"
+echo -n -e "${OSC}105;${color}${ST}"

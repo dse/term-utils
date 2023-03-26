@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+shopt -s lastpipe
+OSC='\e]'
+ST='\e\\'
+if (( $# < 1 )) ; then
+    >&2 echo "sethibg <spec>"
+    exit 1
+fi
+spec="$1"
+echo -n -e "${OSC}17;${spec}${ST}"
