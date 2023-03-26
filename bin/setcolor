@@ -7,7 +7,7 @@ OSC='\e]'
 ST='\e\\'
 if (( $# < 2 )) ; then
     >&2 echo "setcolor <num> <spec>"
-    >&2 echo "<num> = 0 to 7, 8 to 15 for colors; 16 to 87 or 16 to 255"
+    >&2 echo "0=blk;1=red;2=grn;3=yel;4=blu;5=mgn;6=cyn;7=wht;8..15=bright;16..87;88..255"
     exit 1
 fi
 color="$1"
