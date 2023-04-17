@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+DCS=$'\eP'
+ST=$'\e\\'
+echo -n "${DCS}\$qm${ST}" >/dev/tty # request status string SGR
+read -d$'\\' -s -t 0.25 </dev/tty
+echo "${REPLY@Q}"

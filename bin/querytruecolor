@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+DCS=$'\eP'
+CSI=$'\e['
+ST=$'\e\\'
+echo -n "${CSI}38:2:254:254:254m" >/dev/tty
+echo -n "${DCS}\$qm${ST}" >/dev/tty # request status string SGR
+read -d$'\\' -s -t 0.25 </dev/tty
+echo -n "${CSI}m" >/dev/tty
+echo "${REPLY@Q}"
+[[ "${REPLY}" = *"254:254:254"* ]]

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+OSC=$'\e]'
+BEL=$'\a'                   # accepted as string terminal for OSC cmds
+echo -n "${OSC}50;?${BEL}" >/dev/tty
+read -d"${BEL}" -s -t 0.25 </dev/tty
+echo "${REPLY@Q}"

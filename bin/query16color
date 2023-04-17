@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+echo -n $'\e]4;15;?\a' >/dev/tty
+read -d$'\a' -s -t 0.25 </dev/tty
+[[ "$REPLY" != "" ]]

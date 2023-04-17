@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+OSC=$'\e]'
+BEL=$'\a'                   # accepted as string terminal for OSC cmds
+ST=$'\e\\'
+CR=$'\r'
+
+query () {
+    echo -n "$1" >/dev/tty
+    read -d "${BEL}" -s -t 0.25 </dev/tty
+    echo "${REPLY@Q}"
+}
+
+for (( i = 0; i < 16; i += 1 )) ; do
+    echo -n "color${i}="
+    query "${OSC}4;${i};?${BEL}"
+done
+
+echo -n "BD="; query "${OSC}5;0;?${BEL}"
+echo -n "UL="; query "${OSC}5;1;?${BEL}"
+echo -n "BL="; query "${OSC}5;2;?${BEL}"
+echo -n "RV="; query "${OSC}5;3;?${BEL}"
+echo -n "IT="; query "${OSC}5;4;?${BEL}"
+
+echo -n "FORE="; query "${OSC}10;?${BEL}"
+echo -n "BACK="; query "${OSC}11;?${BEL}"
+echo -n "CURS="; query "${OSC}12;?${BEL}"
+echo -n "POINTERFORE="; query "${OSC}13;?${BEL}"
+echo -n "POINTERBACK="; query "${OSC}14;?${BEL}"
+echo -n "TEKFORE="; query "${OSC}15;?${BEL}"
+echo -n "TEKBACK="; query "${OSC}16;?${BEL}"
+echo -n "HIBACK="; query "${OSC}17;?${BEL}"
+echo -n "TEKCURS="; query "${OSC}18;?${BEL}"
+echo -n "HIFORE="; query "${OSC}10;?${BEL}"
+echo -n "FONT="; query "${OSC}50;?${BEL}"
+echo -n "(mintty) FONTSIZE="; query "${OSC}7770;?${BEL}"
+echo -n "(mintty) FONTWINDOWSIZE="; query "${OSC}7777;?${BEL}"
