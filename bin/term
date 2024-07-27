@@ -1,0 +1,255 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+shopt -s lastpipe
+
+OSC=$'\e]'
+ST=$'\e\\'
+CSI=$'\e['
+
+main () {
+    if (( !$# )) ; then
+        term_help
+        exit 1
+    fi
+    cmd="$1"
+    shift
+    case "$cmd" in
+        help)
+            term_help
+            exit 0
+            ;;
+        font)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_font_help ; exit 0 ; fi
+            if (( !$# || $# > 2 )) ; then
+                term_font_help
+                exit 1
+            fi
+            echo -n "${OSC}50;${1}${ST}"
+            if (( $# == 2 )) ; then
+                echo -n "${OSC}7777;${2}${ST}"
+            fi
+            ;;
+        font-size)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_font_size_help ; exit 0 ; fi
+            if (( !$# || $# > 1 )) ; then
+                term_font_size_help
+                exit 1
+            fi
+            echo -n "${OSC}7777;${1}${ST}"
+            ;;
+        resize)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_resize_help ; exit 0 ; fi
+            if (( $# < 2 || $# > 2 )) ; then
+                term_resize_help
+                exit 1
+            fi
+            echo -n "${CSI}8;${1};${2}t"
+            ;;
+        fg|foreground|fore)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_fg_help ; exit 0 ; fi
+            if (( $# != 1 )) ; then
+                term_fg_help
+                exit 1
+            fi
+            case "$1" in
+                reset|default) echo -n "${OSC}110${ST}" ;;
+                *)             echo -n "${OSC}10;${1}${ST}" ;;
+            esac
+            ;;
+        bg|background|back)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_bg_help ; exit 0 ; fi
+            if (( $# != 1 )) ; then
+                term_bg_help
+                exit 1
+            fi
+            case "$1" in
+                reset|default) echo -n "${OSC}111${ST}" ;;
+                *)             echo -n "${OSC}11;${1}${ST}" ;;
+            esac
+            ;;
+        cursor)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_cursor_help ; exit 0 ; fi
+            if (( $# < 1 || $# > 2 )) ; then
+                term_cursor_help
+                exit 1
+            fi
+            if (( $# == 1 )) ; then
+                case "$1" in
+                    reset|default)  echo -n "${OSC}112${ST}"
+                                    sleep 1
+                                    echo -n "${OSC}1 q" ;;
+                    blink|blinking) echo -n "${OSC}0 q" ;;
+                    steady)         echo -n "${OSC}2 q" ;;
+                    *)              echo -n "${OSC}12;${1}${ST}" ;;
+                esac
+            elif (( $# == 2 )) ; then
+                case "$1,$2" in
+                    blinking,block|blink,block)         echo -n "${CSI}0 q" ;;
+                    steady,block)                       echo -n "${CSI}2 q" ;;
+                    blinking,underline|blink,underline) echo -n "${CSI}3 q" ;;
+                    steady,underline)                   echo -n "${CSI}4 q" ;;
+                    blinking,bar|blink,bar)             echo -n "${CSI}5 q" ;;
+                    steady,bar)                         echo -n "${CSI}6 q" ;;
+                    *)
+                        die "$@" ;;
+                esac
+            fi
+            ;;
+        reverse) # the opposite of which is called "normal" per ctlseqs
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_reverse_help ; exit 0 ; fi
+            if (( $# > 1 )) ; then
+                term_reverse_help
+                exit 1
+            fi
+            if (( !$# )) ; then
+                echo -n "${CSI}?5h"
+            else
+                case "$1" in
+                    false|f|off|0|n|no) echo -n "${CSI}?5l" ;;
+                    true|t|on|1|y|yes)  echo -n "${CSI}?5h" ;;
+                    *)
+                        die "$@" ;;
+                esac
+            fi
+            ;;
+        reset)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_reset_help ; exit 0 ; fi
+            if (( $# > 1 )) ; then
+                term_reset_help
+                exit 1
+            fi
+            if (( !$# )) ; then
+                echo -n $'\ec'
+            else
+                case "$1" in
+                    soft) echo -n "${CSI}!p" ;;
+                    full) echo -n $'\ec' ;;
+                    *)
+                        die "$@" ;;
+                esac
+            fi
+            ;;
+        fs|fullscreen)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_fullscreen_help ; exit 0 ; fi
+            term_fullscreen "$@"
+            ;;
+        window)
+            if (( $# )) && [[ "$1" == "help" ]] ; then term_window_help ; exit 0 ; fi
+            case $# in
+                1)
+                    case "$1" in
+                        deiconify|uniconify) echo -n "${CSI}1t" ;;
+                        iconify)             echo -n "${CSI}1t" ;;
+                        raise)               echo -n "${CSI}5t" ;;
+                        lower)               echo -n "${CSI}6t" ;;
+                        refresh)             echo -n "${CSI}7t" ;;
+                        restore)             echo -n "${CSI}9;0t" ;;
+                        maximize)            echo -n "${CSI}9;1t" ;;
+                        fullscreen)          echo -n "${CSI}10;1t" ;;
+                        *)
+                            die "$@" ;;
+                    esac
+                    ;;
+                2)
+                    case "$1,$2" in
+                        maximize,vertically)   echo -n "${CSI}9;2t" ;;
+                        maximize,horizontally) echo -n "${CSI}9;3t" ;;
+                        fs,*|fullscreen,*)
+                            shift
+                            term_fullscreen "$@"
+                            ;;
+                        *)
+                            die "$@" ;;
+                    esac
+                    ;;
+                3)
+                    case "$1" in
+                        move)   echo -n "${CSI}3;${2};${3}t" ;;
+                        resize) echo -n "${CSI}8;${2};${3}t" ;;
+                        *)
+                            die "$@" ;;
+                    esac
+                    ;;
+                *)
+                    die "$@" ;;
+            esac
+            ;;
+        *)
+            die "$@" ;;
+    esac
+}
+
+term_reset_help () {
+    echo "term reset [soft|full]"
+}
+term_reverse_help () {
+    echo "term reverse [on|off]"
+}
+term_font_help () {
+    echo "term font '<font-family>' [<font-size>]"
+}
+term_font_size_help () {
+    echo "term font-size <font-size>"
+}
+term_resize_help () {
+    echo "term resize <rows> <columns>"
+}
+term_fg_help () {
+    echo "term foreground <color>|reset"
+}
+term_bg_help () {
+    echo "term background <color>|reset"
+}
+term_cursor_help () {
+    echo "term cursor <color>|blinking|steady|reset"
+    echo "term cursor blinking [block|underline|bar]"
+    echo "term cursor steady   [block|underline|bar]"
+}
+term_window_help () {
+    echo "term [window] fullscreen [on|off|toggle]"
+    echo "term window iconify|deiconify|raise|lower|refresh|restore"
+    echo "term window maximize [vertically,horizontally]"
+    echo "term window move <x> <y>"
+    echo "term window resize <height> <width>"
+}
+term_fullscreen_help () {
+    echo "term fullscreen [on|off|toggle]"
+}
+term_help () {
+    term_reset_help
+    term_reverse_help
+    term_font_help
+    term_font_size_help
+    term_resize_help
+    term_fg_help
+    term_bg_help
+    term_cursor_help
+    term_window_help
+    # term_fullscreen_help intentionally omitted as term window help covers it
+}
+
+term_fullscreen () {
+    if (( !$# )) ; then
+        echo -n "${CSI}10;1t"
+        return
+    fi
+    if (( $# > 1 )) ; then
+        die "$@"
+    fi
+    case "$1" in
+        toggle)             echo -n "${CSI}10;2t" ;;
+        on|yes|y|t|true|1)  echo -n "${CSI}10;1t" ;;
+        off|no|n|f|false|0) echo -n "${CSI}10;0t" ;;
+        *)
+            die "$@" ;;
+    esac
+}
+
+die () {
+    echo "${0##*/} $@: invalid command" >&2
+    exit 1
+}
+
+main "$@"
