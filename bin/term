@@ -48,26 +48,40 @@ main () {
             echo -n "${CSI}8;${1};${2}t"
             ;;
         fg|foreground|fore)
-            if (( $# )) && [[ "$1" == "help" ]] ; then term_fg_help ; exit 0 ; fi
-            if (( $# != 1 )) ; then
-                term_fg_help
-                exit 1
-            fi
-            case "$1" in
-                reset|default) echo -n "${OSC}110${ST}" ;;
-                *)             echo -n "${OSC}10;${1}${ST}" ;;
-            esac
+            set_or_reset_color 10 110 term_special_color_help "$1"
             ;;
         bg|background|back)
-            if (( $# )) && [[ "$1" == "help" ]] ; then term_bg_help ; exit 0 ; fi
-            if (( $# != 1 )) ; then
-                term_bg_help
-                exit 1
-            fi
-            case "$1" in
-                reset|default) echo -n "${OSC}111${ST}" ;;
-                *)             echo -n "${OSC}11;${1}${ST}" ;;
-            esac
+            set_or_reset_color 11 111 term_special_color_help "$1"
+            ;;
+        hifg|highlight-foreground|high-fore)
+            set_or_reset_color 19 119 term_special_color_help "$1"
+            ;;
+        hibg|highlight-background|high-back)
+            set_or_reset_color 17 117 term_special_color_help "$1"
+            ;;
+        bdfg|bold-color)
+            echo -n "${OSC}6;0;1${ST}"
+            set_or_reset_color "5;0" "105;0" term_special_color_help "$1"
+            ;;
+        ulfg|underline-color)
+            echo -n "${OSC}6;1;1${ST}"
+            set_or_reset_color "5;1" "105;1" term_special_color_help "$1"
+            ;;
+        blfg|blink-color)
+            echo -n "${OSC}6;2;1${ST}"
+            set_or_reset_color "5;2" "105;2" term_special_color_help "$1"
+            ;;
+        rvfg|reverse-color)
+            echo -n "${OSC}6;3;1${ST}"
+            set_or_reset_color "5;3" "105;3" term_special_color_help "$1"
+            ;;
+        itfg|italic-color)
+            echo -n "${OSC}6;4;1${ST}"
+            set_or_reset_color "5;4" "105;4" term_special_color_help "$1"
+            ;;
+        color-[0-9]|color-[1-9][0-9]|color-1[0-9][0-9]|color-2[0-4][0-9]|color-25[0-5])
+            colornum="${cmd#color-}"
+            set_or_reset_color "4;${colornum}" "104;${colornum}" term_color_number_help "$1"
             ;;
         cursor)
             if (( $# )) && [[ "$1" == "help" ]] ; then term_cursor_help ; exit 0 ; fi
@@ -78,7 +92,6 @@ main () {
             if (( $# == 1 )) ; then
                 case "$1" in
                     reset|default)  echo -n "${OSC}112${ST}"
-                                    sleep 1
                                     echo -n "${OSC}1 q" ;;
                     blink|blinking) echo -n "${OSC}0 q" ;;
                     steady)         echo -n "${OSC}2 q" ;;
@@ -196,11 +209,11 @@ term_font_size_help () {
 term_resize_help () {
     echo "term resize <rows> <columns>"
 }
-term_fg_help () {
+term_special_color_help () {
     echo "term foreground <color>|reset"
-}
-term_bg_help () {
     echo "term background <color>|reset"
+    echo "term highlight-foreground <color>|reset"
+    echo "term highlight-background <color>|reset"
 }
 term_cursor_help () {
     echo "term cursor <color>|blinking|steady|reset"
@@ -217,14 +230,17 @@ term_window_help () {
 term_fullscreen_help () {
     echo "term fullscreen [on|off|toggle]"
 }
+term_color_number_help () {
+    echo "term color-0..color-255 <color>|reset"
+}
+
 term_help () {
     term_reset_help
     term_reverse_help
     term_font_help
     term_font_size_help
     term_resize_help
-    term_fg_help
-    term_bg_help
+    term_special_color_help
     term_cursor_help
     term_window_help
     # term_fullscreen_help intentionally omitted as term window help covers it
@@ -247,9 +263,36 @@ term_fullscreen () {
     esac
 }
 
+set_or_reset_color () {
+    local set="$1"; shift
+    local reset="$1"; shift
+    local help="$1"; shift
+    if (( $# )) && [[ "$1" == "help" ]] ; then "$help" ; exit 0 ; fi
+    if (( $# != 1 )) ; then
+        term_bg_help
+        exit 1
+    fi
+    case "$1" in
+        reset|default) echo -n "${OSC}${reset}${ST}" ;;
+        *)             echo -n "${OSC}${set};${1}${ST}" ;;
+    esac
+}
+
 die () {
     echo "${0##*/} $@: invalid command" >&2
     exit 1
 }
 
 main "$@"
+
+# Ps = 4;c;spec
+#     c = 0 to 15, 16 to 87, 88 to 255
+# Ps = 5;c;spec
+#     c = 0, 1, 2, 3, 4
+# Ps =
+
+# h/t https://stackoverflow.com/a/13422481 for font weights
+# echo -e "\033[?35h\033]50;#+1^G\033\\" # aka CSI ? 35 h OSC 50 ; #+1 BEL ST
+# CSI ? 35 h             set private mode enable font shifting functions
+# OSC 50 ; <Pt> BEL|ST   set font to #+1
+#           #+1          index in the font menu, relative
